@@ -23,7 +23,6 @@ class FastBillAPIController:
         all_results.extend(this_response)
         if len(this_response) >= payload['LIMIT']:
             self._post(payload, offset + payload['LIMIT'], results=all_results)
-        #  pprint(all_results)
         return all_results
 
     def _get_service(self, service, year, month=None):
@@ -41,6 +40,9 @@ class FastBillAPIController:
     def get_revenues(self, year, month=None):
         return self._get_service(service='revenue.get', year=year, month=month)
 
+    def get_invoices(self, year, month=None):
+        return self._get_service(service='invoice.get', year=year, month=month)
+
 
 def main():
     from datetime import datetime
@@ -49,15 +51,22 @@ def main():
 
     revenues = []
     expenses = []
+    invoices = []
     for year in (now.year, now.year - 1):
         revenues.extend(fbc.get_revenues(year=year))
         expenses.extend(fbc.get_expenses(year=year))
+        invoices.extend(fbc.get_invoices(year=year))
 
     for year in (now.year, now.year - 1):
         for q, i in enumerate(range(0, 12, 3)):
-            print(f'Einnahmen {year} Q{q + 1}: ', round(sum(item['SUB_TOTAL']
-                                                            for item in revenues
-                                                            if item['PAID_DATE'].startswith(
+            print(f'Einnahmen (Gutschriften) {year} Q{q + 1}: ', round(sum(item['SUB_TOTAL']
+                                                                           for item in revenues
+                                                                           if item['PAID_DATE'].startswith(
+                fbc.get_dates(start_month=i + 1, end_month=i + 3, year=year)))))
+
+            print(f'Einnahmen (Rechnungen) {year} Q{q + 1}: ', round(sum(item['SUB_TOTAL']
+                                                                         for item in invoices
+                                                                         if item['PAID_DATE'].startswith(
                 fbc.get_dates(start_month=i + 1, end_month=i + 3, year=year)))))
 
             print(f'Vorsteuer {year} Q{q + 1}:', round(sum(item['VAT_TOTAL']
